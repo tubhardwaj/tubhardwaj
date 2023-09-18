@@ -1,0 +1,32 @@
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import play.mvc.Controller;
+import play.mvc.Result;
+
+public class UserController extends Controller {
+
+    private final ActorSystem actorSystem;
+    private final ActorRef emailSenderActor;
+
+    @Inject
+    public UserController(ActorSystem actorSystem) {
+        this.actorSystem = actorSystem;
+        this.emailSenderActor = actorSystem.actorOf(EmailSenderActor.props(), "emailSenderActor");
+    }
+
+    public Result removeAuthorizedUser(String userId) {
+        // Logic to remove the authorized user
+
+        // After successful removal, trigger the email sending
+        EmailSenderActor.SendEmail emailMessage = new EmailSenderActor.SendEmail(
+            "recipient@example.com",
+            "User Removal Confirmation",
+            "The authorized user has been successfully removed."
+        );
+
+        emailSenderActor.tell(emailMessage, ActorRef.noSender());
+
+        // Return a response to the user
+        return ok("Authorized user removed successfully.");
+    }
+}
