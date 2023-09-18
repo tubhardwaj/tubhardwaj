@@ -1,0 +1,51 @@
+import akka.actor.AbstractActor;
+import akka.actor.Props;
+import org.apache.commons.mail.Email;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.HtmlEmail;
+
+public class EmailSenderActor extends AbstractActor {
+
+    // Define a message for sending emails
+    public static class SendEmail {
+        public final String recipientEmail;
+        public final String subject;
+        public final String messageBody;
+
+        public SendEmail(String recipientEmail, String subject, String messageBody) {
+            this.recipientEmail = recipientEmail;
+            this.subject = subject;
+            this.messageBody = messageBody;
+        }
+    }
+
+    public static Props props() {
+        return Props.create(EmailSenderActor.class, EmailSenderActor::new);
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(SendEmail.class, this::sendEmail)
+                .build();
+    }
+
+    private void sendEmail(SendEmail sendEmail) {
+        // Configure your email sending logic here
+        try {
+            Email email = new HtmlEmail();
+            email.setHostName("your-smtp-server.com");
+            email.setSmtpPort(587);
+            email.setAuthentication("your-email@example.com", "your-password");
+            email.setFrom("your-email@example.com");
+            email.setSubject(sendEmail.subject);
+            email.setMsg(sendEmail.messageBody);
+            email.addTo(sendEmail.recipientEmail);
+            email.send();
+
+            System.out.println("Email sent successfully.");
+        } catch (EmailException e) {
+            System.err.println("Email sending failed: " + e.getMessage());
+        }
+    }
+}
