@@ -1,0 +1,59 @@
+import akka.actor.AbstractActor;
+import akka.actor.Props;
+import org.apache.commons.mail.Email;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.HtmlEmail;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+public class EmailSenderActor extends AbstractActor {
+
+    // Define a message for sending emails
+    public static class SendEmail {
+        public final String recipientEmail;
+        public final String subject;
+        public final String htmlFilePath;
+
+        public SendEmail(String recipientEmail, String subject, String htmlFilePath) {
+            this.recipientEmail = recipientEmail;
+            this.subject = subject;
+            this.htmlFilePath = htmlFilePath;
+        }
+    }
+
+    public static Props props() {
+        return Props.create(EmailSenderActor.class, EmailSenderActor::new);
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(SendEmail.class, this::sendEmail)
+                .build();
+    }
+
+    private void sendEmail(SendEmail sendEmail) {
+        // Configure your email sending logic here
+        try {
+            // Read HTML content from the file
+            String htmlContent = new String(Files.readAllBytes(Paths.get(sendEmail.htmlFilePath)), StandardCharsets.UTF_8);
+
+            Email email = new HtmlEmail();
+            email.setHostName("your-smtp-server.com");
+            email.setSmtpPort(587);
+            email.setAuthentication("your-email@example.com", "your-password");
+            email.setFrom("your-email@example.com");
+            email.setSubject(sendEmail.subject);
+            email.setHtmlMsg(htmlContent); // Set the HTML content from the file
+            email.addTo(sendEmail.recipientEmail);
+            email.send();
+
+            System.out.println("Email sent successfully.");
+        } catch (IOException | EmailException e) {
+            System.err.println("Email sending failed: " + e.getMessage());
+        }
+    }
+}
